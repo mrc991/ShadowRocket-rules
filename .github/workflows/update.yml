@@ -1,4 +1,4 @@
-name: Update Shadowrocket Rules
+ name: Update Shadowrocket Rules
 
     on:
       schedule:
