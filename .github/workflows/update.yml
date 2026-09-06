@@ -1,10 +1,12 @@
- name: Update Shadowrocket Rules
+name: Update Shadowrocket Rules
 
     on:
       schedule:
-        # 每天北京时间 12:00 (UTC 04:00) 自动同步
+        # 每天北京时间 12:00 (UTC 04:00) 兜底同步
         - cron: '0 4 * * *'
       workflow_dispatch:
+      repository_dispatch:
+        types: [openclash_updated]
 
     permissions:
       contents: write
