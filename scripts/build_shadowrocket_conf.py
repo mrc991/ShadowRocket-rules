@@ -2,6 +2,7 @@
 """Dynamic Shadowrocket conf builder: fetches and parses Custom_Clash.ini."""
 from __future__ import annotations
 
+import os
 import re
 import urllib.request
 from pathlib import Path
@@ -94,9 +95,15 @@ GEOSITE_MAP = {
     "apple-tvplus": [f"RULE-SET,{BM}/AppleTV/AppleTV.list,🎥 AppleTV+"],
     "apple-cn": [
         f"RULE-SET,{BM}/Apple/Apple.list,🍎 苹果中国",
+        # blackmatrix7 Apple.list 没有 DOMAIN-SUFFIX，补齐国区 App Store / iCloud
+        "DOMAIN-SUFFIX,apple.com,🍎 苹果中国",
         "DOMAIN-SUFFIX,cdn-apple.com,🍎 苹果中国",
         "DOMAIN-SUFFIX,icloud.com,🍎 苹果中国",
         "DOMAIN-SUFFIX,icloud-content.com,🍎 苹果中国",
+        "DOMAIN-SUFFIX,mzstatic.com,🍎 苹果中国",
+        "DOMAIN-SUFFIX,aaplimg.com,🍎 苹果中国",
+        "DOMAIN-SUFFIX,apple-cloudkit.com,🍎 苹果中国",
+        "DOMAIN-SUFFIX,appsto.re,🍎 苹果中国",
     ],
     "microsoft@cn": [f"RULE-SET,{BM}/Microsoft/Microsoft.list,Ⓜ️ 微软中国"],
     "category-cryptocurrency": [
@@ -140,7 +147,57 @@ GEOIP_MAP = {
 }
 
 
+PRIMARY_DNS = "dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query"
+FALLBACK_DNS = (
+    "fallback-dns-server = https://1.1.1.1/dns-query #proxy, "
+    "https://dns.google/dns-query #proxy"
+)
+SKIP_PROXY_EXTRA = "*.95516.com, *.unionpay.com, *.unionpaysecure.com"
+
+
+def priority_direct_rules() -> list[str]:
+    """App Store / 云闪付：必须在广告规则和漏网之鱼之前。"""
+    return [
+        "# App Store / 云闪付 保活（进程 + 银联域名；苹果域名仍走 AppleTV+ 之后的 🍎 苹果中国）",
+        "PROCESS-NAME,AppStore,🎯 全球直连",
+        "PROCESS-NAME,appstored,🎯 全球直连",
+        "PROCESS-NAME,itunesstored,🎯 全球直连",
+        "USER-AGENT,AppStore*,🎯 全球直连",
+        "USER-AGENT,itunesstored*,🎯 全球直连",
+        "USER-AGENT,com.apple.appstored*,🎯 全球直连",
+        "PROCESS-NAME,云闪付,🎯 全球直连",
+        "PROCESS-NAME,UPWallet,🎯 全球直连",
+        "PROCESS-NAME,UnionPay,🎯 全球直连",
+        "USER-AGENT,UnionPay*,🎯 全球直连",
+        f"RULE-SET,{BM}/UnionPay/UnionPay.list,🎯 全球直连",
+        "DOMAIN-SUFFIX,unionpay.com,🎯 全球直连",
+        "DOMAIN-SUFFIX,unionpay.net,🎯 全球直连",
+        "DOMAIN-SUFFIX,unionpaysecure.com,🎯 全球直连",
+        "DOMAIN-SUFFIX,unionpayintl.com,🎯 全球直连",
+        "DOMAIN-SUFFIX,unionpayintl.cn,🎯 全球直连",
+        "DOMAIN-SUFFIX,95516.com,🎯 全球直连",
+        "DOMAIN-SUFFIX,95516.net,🎯 全球直连",
+        "DOMAIN-SUFFIX,chinaums.com,🎯 全球直连",
+        "DOMAIN-SUFFIX,chinapay.com,🎯 全球直连",
+        "DOMAIN-SUFFIX,chinapay.cn,🎯 全球直连",
+        "DOMAIN-SUFFIX,chinaunionpay.com,🎯 全球直连",
+        "DOMAIN-SUFFIX,chinaunionpay.com.cn,🎯 全球直连",
+        "DOMAIN-SUFFIX,chinaunionpay.net,🎯 全球直连",
+        "DOMAIN-SUFFIX,cup.com.cn,🎯 全球直连",
+        "DOMAIN-SUFFIX,cup62.cn,🎯 全球直连",
+        "DOMAIN-SUFFIX,airepay.net,🎯 全球直连",
+        "DOMAIN-SUFFIX,chinapayhongkong.com,🎯 全球直连",
+    ]
+
+
 def fetch_ini_text() -> str:
+    local = os.environ.get("CUSTOM_CLASH_INI", "").strip()
+    if local:
+        path = Path(local)
+        if path.is_file():
+            return path.read_text(encoding="utf-8")
+        raise SystemExit(f"CUSTOM_CLASH_INI not a file: {local}")
+
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     try:
         req = urllib.request.Request(INI_URL, headers={"User-Agent": "Mozilla/5.0"})
@@ -329,11 +386,11 @@ def main() -> None:
         "",
         "[General]",
         "bypass-system = true",
-        "skip-proxy = 127.0.0.1, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 169.254.0.0/16, localhost, *.local, captive.apple.com",
+        "skip-proxy = 127.0.0.1, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 169.254.0.0/16, localhost, *.local, captive.apple.com, " + SKIP_PROXY_EXTRA,
         "tun-excluded-routes = 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 255.255.255.255/32",
-        "dns-server = https://1.1.1.1/dns-query #proxy, https://dns.google/dns-query #proxy",
-        "fallback-dns-server = 1.1.1.1, 8.8.8.8",
-        "ipv6 = true",
+        PRIMARY_DNS,
+        FALLBACK_DNS,
+        "ipv6 = false",
         "udp-policy-not-supported-behaviour = REJECT",
         "",
         "[Proxy Group]",
@@ -341,6 +398,7 @@ def main() -> None:
     lines.extend(proxy_group_lines())
     lines.append("")
     lines.append("[Rule]")
+    lines.extend(priority_direct_rules())
     lines.extend(
         overlay_rule_lines(include_broad_cn=True, include_final=True, include_nonstandard_ports=True)
     )

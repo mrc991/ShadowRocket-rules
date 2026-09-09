@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Merge LC groups into johnshall sr_top500_whitelist_ad.conf and switch DNS to Google/Cloudflare DoH."""
+"""Merge LC groups into johnshall sr_top500_whitelist_ad.conf; keep China DoH, proxy DoH as fallback."""
 from __future__ import annotations
 
 import re
@@ -17,11 +17,10 @@ UPSTREAM_REF = "release"
 CACHE = ROOT / ".cache" / UPSTREAM_PATH
 OUT = ROOT / "Custom_Shadowrocket_whitelist_ad.conf"
 
-# 国内 DoH 换成 Google / Cloudflare，并走代理，否则在国内可能解析不到。
-DOH_LINE = (
-    "dns-server = https://1.1.1.1/dns-query #proxy, "
-    "https://dns.google/dns-query #proxy"
-)
+# 国区 App Store / 云闪付需要国内 DNS 视图；海外域名解析失败再走代理 DoH。
+DOH_LINE = base.PRIMARY_DNS
+FALLBACK_DOH_LINE = base.FALLBACK_DNS
+SKIP_APPEND = ", " + base.SKIP_PROXY_EXTRA
 
 
 def fetch_upstream() -> str:
@@ -76,15 +75,25 @@ def split_sections(text: str) -> dict[str, list[str]]:
 
 def rewrite_general(lines: list[str]) -> list[str]:
     out: list[str] = []
-    replaced = False
+    replaced_dns = False
+    replaced_fallback = False
     for line in lines:
         if re.match(r"^\s*dns-server\s*=", line, re.I):
             out.append(DOH_LINE)
-            replaced = True
+            replaced_dns = True
+        elif re.match(r"^\s*fallback-dns-server\s*=", line, re.I):
+            out.append(FALLBACK_DOH_LINE)
+            replaced_fallback = True
+        elif re.match(r"^\s*skip-proxy\s*=", line, re.I):
+            if "95516.com" not in line:
+                line = line.rstrip() + SKIP_APPEND
+            out.append(line)
         else:
             out.append(line)
-    if not replaced:
+    if not replaced_dns:
         out.append(DOH_LINE)
+    if not replaced_fallback:
+        out.append(FALLBACK_DOH_LINE)
     return out
 
 
@@ -133,7 +142,7 @@ def main() -> None:
     header = [
         "# LC merge of johnshall sr_top500_whitelist_ad + Custom_Clash groups",
         f"# upstream: https://github.com/{UPSTREAM_REPO}/blob/{UPSTREAM_REF}/{UPSTREAM_PATH}",
-        "# DNS: Google + Cloudflare DoH via proxy (replaced alidns/doh.pub)",
+        "# DNS: AliDNS/DNSPod 直连解析；Cloudflare/Google DoH 仅 fallback 且走代理",
         "# 不含节点。配置页导入，不要改首页订阅。",
         "",
     ]
@@ -148,6 +157,8 @@ def main() -> None:
     out.extend(base.proxy_group_lines())
     out.append("")
     out.append("[Rule]")
+    out.extend(base.priority_direct_rules())
+    out.append("")
     out.extend(ads)
     if ads and ads[-1].strip():
         out.append("")
