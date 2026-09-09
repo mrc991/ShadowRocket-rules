@@ -94,16 +94,12 @@ GEOSITE_MAP = {
     "youtube": [f"RULE-SET,{BM}/YouTube/YouTube.list,📹 YouTube"],
     "apple-tvplus": [f"RULE-SET,{BM}/AppleTV/AppleTV.list,🎥 AppleTV+"],
     "apple-cn": [
-        f"RULE-SET,{BM}/Apple/Apple.list,🍎 苹果中国",
-        # blackmatrix7 Apple.list 没有 DOMAIN-SUFFIX，补齐国区 App Store / iCloud
-        "DOMAIN-SUFFIX,apple.com,🍎 苹果中国",
+        # 不用 blackmatrix7 Apple.list：其 17.0.0.0/8 直连会把美区 App Store 打到国内超时
         "DOMAIN-SUFFIX,cdn-apple.com,🍎 苹果中国",
         "DOMAIN-SUFFIX,icloud.com,🍎 苹果中国",
         "DOMAIN-SUFFIX,icloud-content.com,🍎 苹果中国",
-        "DOMAIN-SUFFIX,mzstatic.com,🍎 苹果中国",
-        "DOMAIN-SUFFIX,aaplimg.com,🍎 苹果中国",
-        "DOMAIN-SUFFIX,apple-cloudkit.com,🍎 苹果中国",
-        "DOMAIN-SUFFIX,appsto.re,🍎 苹果中国",
+        "DOMAIN-SUFFIX,icloud.com.cn,🍎 苹果中国",
+        "DOMAIN-SUFFIX,apple.com.cn,🍎 苹果中国",
     ],
     "microsoft@cn": [f"RULE-SET,{BM}/Microsoft/Microsoft.list,Ⓜ️ 微软中国"],
     "category-cryptocurrency": [
@@ -156,15 +152,17 @@ SKIP_PROXY_EXTRA = "*.95516.com, *.unionpay.com, *.unionpaysecure.com"
 
 
 def priority_direct_rules() -> list[str]:
-    """App Store / 云闪付：必须在广告规则和漏网之鱼之前。"""
+    """云闪付直连 + 美区 App Store 走美国节点；须在广告规则之前。itunes 域名留给 AppleTV+ 之后。"""
     return [
-        "# App Store / 云闪付 保活（进程 + 银联域名；苹果域名仍走 AppleTV+ 之后的 🍎 苹果中国）",
-        "PROCESS-NAME,AppStore,🎯 全球直连",
-        "PROCESS-NAME,appstored,🎯 全球直连",
-        "PROCESS-NAME,itunesstored,🎯 全球直连",
-        "USER-AGENT,AppStore*,🎯 全球直连",
-        "USER-AGENT,itunesstored*,🎯 全球直连",
-        "USER-AGENT,com.apple.appstored*,🎯 全球直连",
+        "# 云闪付直连；美区 App Store 走 🍎 App Store（默认美国节点）",
+        "PROCESS-NAME,AppStore,🍎 App Store",
+        "PROCESS-NAME,appstored,🍎 App Store",
+        "PROCESS-NAME,itunesstored,🍎 App Store",
+        "USER-AGENT,AppStore*,🍎 App Store",
+        "USER-AGENT,itunesstored*,🍎 App Store",
+        "USER-AGENT,com.apple.appstored*,🍎 App Store",
+        "DOMAIN-SUFFIX,apps.apple.com,🍎 App Store",
+        "DOMAIN-SUFFIX,appsto.re,🍎 App Store",
         "PROCESS-NAME,云闪付,🎯 全球直连",
         "PROCESS-NAME,UPWallet,🎯 全球直连",
         "PROCESS-NAME,UnionPay,🎯 全球直连",
