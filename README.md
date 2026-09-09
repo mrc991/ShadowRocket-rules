@@ -6,7 +6,7 @@ Shadowrocket (小火箭) 完整分流规则配置，每日自动与上游广告�
 
 1. **上游广告拦截与白名单**：每日同步 [Johnshall/Shadowrocket-ADBlock-Rules-Forever](https://github.com/Johnshall/Shadowrocket-ADBlock-Rules-Forever) 的 `sr_top500_whitelist_ad.conf`（拦截广告 + 国内 top500 白名单直连）。
 2. **精细化策略组**：无缝叠加 `Custom_Clash.ini` 策略分组（GitHub / AI 服务 / 即时通讯 / 社交媒体 / 流媒体 Netflix/Disney/YouTube / 游戏 Steam / TV Box 等）。
-3. **安全 DNS / DoH**：DNS 替换为 Cloudflare `1.1.1.1` + Google DoH，并通过代理节点解析（`#proxy`），避免海外域名遭遇国内 DNS 污染或泄露。
+3. **DNS / DoH**：主 DNS 用阿里 `dns.alidns.com` + DNSPod `doh.pub`（国内视图，保证云闪付走国区）；Cloudflare / Google DoH 仅作 `fallback-dns-server` 且加 `#proxy`。美区 App Store 走 `🍎 App Store`（默认美国节点）；银联云闪付强制直连，且排在广告规则之前。
 4. **无节点纯规则**：配置内不包含节点服务器，不破坏您在小火箭中已添加的机场节点与订阅。
 5. **GitHub Actions 每日自动构建**：每天定时拉取上游合并，用户只需在小火箭中更新一次配置链接即可长久保持最新。
 
