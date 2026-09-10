@@ -135,6 +135,16 @@ def test_generated_confs() -> None:
         itunes_at = text.find("DOMAIN-SUFFIX,itunes.apple.com,🍎 App Store")
         if tv_at < 0 or itunes_at < 0 or not (tv_at < itunes_at):
             _fail(f"{path.name} AppleTV list must appear before itunes.apple.com suffix")
+        net_rule = "DOMAIN-SUFFIX,jsdelivr.net,🚀 手动选择"
+        com_rule = "DOMAIN-SUFFIX,jsdelivr.com,🚀 手动选择"
+        if net_rule not in text or com_rule not in text:
+            _fail(f"{path.name} jsdelivr.net/com must go to 🚀 手动选择")
+        if "DOMAIN-SUFFIX,jsdelivr.net,🎯 全球直连" in text or "DOMAIN-SUFFIX,jsdelivr.com,🎯 全球直连" in text:
+            _fail(f"{path.name} jsdelivr must not be forced DIRECT")
+        net_at = text.find(net_rule)
+        direct_at = text.find("Custom_Direct.list")
+        if net_at < 0 or direct_at < 0 or not (net_at < direct_at):
+            _fail(f"{path.name} jsdelivr proxy rule must appear before Custom_Direct.list")
         if not text.strip().endswith("FINAL,🐟 漏网之鱼") and "\nFINAL,🐟 漏网之鱼\n" not in text:
             _fail(f"{path.name} missing FINAL 漏网之鱼")
 
