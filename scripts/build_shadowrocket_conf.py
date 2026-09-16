@@ -128,6 +128,10 @@ GEOSITE_MAP = {
         f"RULE-SET,{BM}/Shopify/Shopify.list,🛒 国外电商",
         f"RULE-SET,{BM}/Shopee/Shopee.list,🛒 国外电商",
     ],
+    "tencent": [
+        f"RULE-SET,{BM}/WeChat/WeChat.list,🎯 全球直连",
+        f"RULE-SET,{BM}/Tencent/Tencent.list,🎯 全球直连",
+    ],
     "gfw": [f"RULE-SET,{BM}/Proxy/Proxy.list,🚀 手动选择"],
     "cn": [f"RULE-SET,{BM}/China/China.list,🎯 全球直连", "GEOIP,CN,🎯 全球直连,no-resolve"],
 }
